@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
@@ -35,15 +36,7 @@ class MainActivity : ComponentActivity() {
         const val TAG = "MainActivity"
     }
 
-    val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        // Callback is invoked after the user selects a media item or closes the
-        // photo picker.
-        if (uri != null) {
-            Log.d("PhotoPicker", "Selected URI: $uri")
-        } else {
-            Log.d("PhotoPicker", "No media selected")
-        }
-    }
+
 
     @RequiresExtension(extension = Build.VERSION_CODES.R, version = 2)
     @OptIn(ExperimentalPermissionsApi::class)
@@ -52,131 +45,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PhotoPickerDemoTheme {
-                val pictureLauncher =
-                    rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(),
-                        onResult = { uri ->
-                            Log.d(TAG, "MineScreen: selected image uri = $uri")
-                        })
-                val pictureLauncher2 =
-                    rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult(),
-                        onResult = { uri ->
-                            Log.d(TAG, "pictureLauncher2: selected image uri = $uri")
-                        })
-                val mediaPermissionLauncher =
-                    rememberMultiplePermissionsState(permissions = mediaPermission.toList(),
-                        onPermissionsResult = {
-                            val unGranted = it.filterValues {
-                                !it
-                            }
-                            if (unGranted.isEmpty()) {
-                                pictureLauncher.launch("image/*")
-                            }
-                        }
-                    )
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column {
-                        Button(
-                            modifier = Modifier.wrapContentSize(),
-                            onClick = {
-                                mediaPermissionLauncher.launchMultiplePermissionRequest()
-                            }
-                        ) {
-                            Text(text = "GetContent, launch Image/* ")
-                        }
-
-                        Button(
-                            modifier = Modifier.wrapContentSize(),
-                            onClick = {
-                                val pickIntent =
-                                    Intent(
-                                        Intent.ACTION_PICK,
-                                        MediaStore.Images.Media.INTERNAL_CONTENT_URI
-                                    )
-                                pictureLauncher2.launch(pickIntent)
-                            }
-                        ) {
-                            Text(text = "ACTION_PICK, INTERNAL_CONTENT_URI")
-                        }
-                        Button(
-                            modifier = Modifier.wrapContentSize(),
-                            onClick = {
-                                val pickIntent =
-                                    Intent(
-                                        Intent.ACTION_PICK,
-                                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                                    )
-                                pictureLauncher2.launch(pickIntent)
-                            }
-                        ) {
-                            Text(text = "ACTION_PICK, EXTERNAL_CONTENT_URI")
-                        }
-                        Button(
-                            modifier = Modifier.wrapContentSize(),
-                            onClick = {
-                                val pickIntent =
-                                    Intent(
-                                        MediaStore.ACTION_PICK_IMAGES,
-                                    ).apply {
-                                        type = "image/*"
-                                    }
-                                pictureLauncher2.launch(pickIntent)
-                            }
-                        ) {
-                            Text(text = "ACTION_PICK_IMAGES")
-                        }
-
-
-                        val pictureLauncher22 =
-                            rememberLauncherForActivityResult(contract = PickContentLegacyDocumentTree()
-                                .apply {
-
-
-                                },
-                                onResult = { uri ->
-                                    Log.d(TAG, "pictureLauncher2: selected image uri = $uri")
-                                })
-                        Button(
-                            modifier = Modifier.wrapContentSize(),
-                            onClick = {
-                                pictureLauncher22.launch(Unit)
-                            }
-                        ) {
-                            Text(text = "ACTION_OPEN_DOCUMENT,image/* ")
-                        }
-                        Button(
-                            modifier = Modifier.wrapContentSize(),
-                            onClick = {
-                                pickMedia.launch(
-                                    PickVisualMediaRequest(
-                                        ActivityResultContracts.PickVisualMedia.ImageOnly
-                                    )
-                                )
-
-                            }
-                        ) {
-                            Text(text = "PickVisualMediaRequest, ImageOnly ")
-                        }
-                        val multiplePhotoPicker = rememberLauncherForActivityResult(
-                            contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 2)
-                        ) {
-                            Log.d(TAG, "MainScreen:multiplePhotoPicker uris :  $it")
-                        }
-
-                        Button(
-                            modifier = Modifier.wrapContentSize(),
-                            onClick = {
-                                multiplePhotoPicker.launch(
-                                    PickVisualMediaRequest(
-                                        ActivityResultContracts.PickVisualMedia.ImageOnly
-                                    )
-                                )
-                            }
-                        ) {
-                            Text(text = "PickMultipleVisualMedia, maxItems = 2 ")
-                        }
+                        AllPhotoPicker()
                     }
                 }
             }
@@ -186,6 +61,144 @@ class MainActivity : ComponentActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
     }
+}
+
+@Composable
+fun ColumnScope.AllPhotoPicker() {
+    val pictureLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(),
+            onResult = { uri ->
+                Log.d(MainActivity.TAG, "GetContent= $uri")
+            }
+        )
+    Button(
+        modifier = Modifier.wrapContentSize(),
+        onClick = {
+            pictureLauncher.launch("image/*")
+        }
+    ) {
+        Text(text = "GetContent, launch Image/* ")
+    }
+
+
+    val pictureLauncher2 =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult(),
+            onResult = { uri ->
+                Log.d(MainActivity.TAG, "pictureLauncher2: selected image uri = $uri")
+            })
+    Button(
+        modifier = Modifier.wrapContentSize(),
+        onClick = {
+            val pickIntent =
+                Intent(
+                    Intent.ACTION_PICK,
+                    MediaStore.Images.Media.INTERNAL_CONTENT_URI
+                )
+            pictureLauncher2.launch(pickIntent)
+        }
+    ) {
+        Text(text = "ACTION_PICK, INTERNAL_CONTENT_URI")
+    }
+
+    val pictureLauncher3 =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult(),
+            onResult = { uri ->
+                Log.d(MainActivity.TAG, "pictureLauncher2: selected image uri = $uri")
+            })
+    Button(
+        modifier = Modifier.wrapContentSize(),
+        onClick = {
+            val pickIntent =
+                Intent(
+                    Intent.ACTION_PICK,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                )
+            pictureLauncher3.launch(pickIntent)
+        }
+    ) {
+        Text(text = "ACTION_PICK, EXTERNAL_CONTENT_URI")
+    }
+
+    val pictureLauncher4 =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult(),
+            onResult = { uri ->
+                Log.d(MainActivity.TAG, "pictureLauncher2: selected image uri = $uri")
+            })
+    Button(
+        modifier = Modifier.wrapContentSize(),
+        onClick = {
+            val pickIntent =
+                Intent(
+                    MediaStore.ACTION_PICK_IMAGES,
+                ).apply {
+                    type = "image/*"
+                }
+            pictureLauncher4.launch(pickIntent)
+        }
+    ) {
+        Text(text = "ACTION_PICK_IMAGES")
+    }
+
+
+    val pictureLauncher5 =
+        rememberLauncherForActivityResult(contract = PickContentLegacyDocumentTree()
+            .apply {
+
+
+            },
+            onResult = { uri ->
+                Log.d(MainActivity.TAG, "pictureLauncher2: selected image uri = $uri")
+            })
+    Button(
+        modifier = Modifier.wrapContentSize(),
+        onClick = {
+            pictureLauncher5.launch(Unit)
+        }
+    ) {
+        Text(text = "ACTION_OPEN_DOCUMENT,image/* ")
+    }
+
+    val pictureLauncher6 = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+
+        if (uri != null) {
+            Log.d("PhotoPicker", "Selected URI: $uri")
+        } else {
+            Log.d("PhotoPicker", "No media selected")
+        }
+    }
+    Button(
+        modifier = Modifier.wrapContentSize(),
+        onClick = {
+            pictureLauncher6.launch(
+                PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        }
+    ) {
+        Text(text = "PickVisualMediaRequest, ImageOnly ")
+    }
+
+
+    val multiplePhotoPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 2)
+    ) {
+        Log.d(MainActivity.TAG, "MainScreen:multiplePhotoPicker uris :  $it")
+    }
+
+    Button(
+        modifier = Modifier.wrapContentSize(),
+        onClick = {
+            multiplePhotoPicker.launch(
+                PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                )
+            )
+        }
+    ) {
+        Text(text = "PickMultipleVisualMedia, maxItems = 2 ")
+    }
+
 }
 
 class PickContentLegacyDocumentTree : ActivityResultContract<Unit, Uri?>() {
